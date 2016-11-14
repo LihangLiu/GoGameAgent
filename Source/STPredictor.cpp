@@ -2,7 +2,7 @@
 #include "STPredictor.h"
 
 
-void STPredictor::train(vector<int*> boards, vector<int*> territories) {
+void STPredictor::train(vector<int*> boards, vector<double*> territories) {
 	vector<BoardFeatures> features = getFeatures(boards);
 	// interact with matlab
 
@@ -25,14 +25,14 @@ double* STPredictor::predict(int* boards) {
 	return res;
 }
 
-void STPredictor::readDataset(vector<string> txtFiles, vector<int*> boards, vector<int*> territories) {
+void STPredictor::readDataset(vector<string> txtFiles, vector<int*>& boards, vector<double*>& territories) {
 	for (vector<string>::iterator it = txtFiles.begin(); it != txtFiles.end(); ++it) {
 		string txtfile = *it;
 		readDataset(txtfile, boards, territories);
 	}
 }
 
-void STPredictor::readDataset(string txtFile, vector<int*> boards, vector<int*> territories) {
+void STPredictor::readDataset(string txtFile, vector<int*>& boards, vector<double*>& territories) {
 	ifstream file(txtFile);
 	string line;
 	while (!file.eof()) {
@@ -44,11 +44,13 @@ void STPredictor::readDataset(string txtFile, vector<int*> boards, vector<int*> 
 				board[POS(i, j)] = line[j] - '0';
 			}
 		}
+		if (line.length()<BOARD_SIZE)		// check end of file
+			break;
 		boards.push_back(board);
 		// get a blank line
 		getline(file, line);
 		// get territory
-		int* t = new int[BOARD_SIZE*BOARD_SIZE];
+		double* t = new double[BOARD_SIZE*BOARD_SIZE];
 		for (int i = 0; i < BOARD_SIZE; ++i) {
 			getline(file, line);
 			for (int j = 0; j < BOARD_SIZE; ++j) {
@@ -93,7 +95,8 @@ BoardFeatures STPredictor::getFeatures(int* board, NoBB* nobb) {
 				fs.setFeature(POS(i, j), n, 0);
 			n++;
 			// liberty
-			fs.setFeature(POS(i, j), n, nobb->calliberty(i, j, -1, -1));
+			if (nobb->get_board(i,j)!=EMPTY)
+				fs.setFeature(POS(i, j), n, nobb->calliberty(i, j, -1, -1));
 			n++;
 			// is in the corner
 			if (i == 0 || i == BOARD_SIZE - 1 || j == 0 || j == BOARD_SIZE - 1)
@@ -161,4 +164,50 @@ void STPredictor::complementNoBBonBoard(NoBB* nobb, int* board) {
 				nobb->play_move(move, c);
 		}
 	}
+
+}
+
+void STPredictor::print(int* board) {
+	cout << endl;
+	for (int i = 0; i < BOARD_SIZE; ++i) {
+		for (int j = 0; j < BOARD_SIZE; ++j) {
+			cout << board[POS(i, j)] << ",";
+		}
+		cout << endl;
+	}
+	cout << endl;
+}
+
+void STPredictor::print(vector<int*> boards) {
+	cout << endl;
+	for (vector<int*>::iterator it = boards.begin(); it != boards.end(); ++it) {
+		int* board = *it;
+		print(board);
+	}
+	cout << endl;
+}
+
+void STPredictor::print(BoardFeatures f) {
+	cout << endl;
+	for (int i = 0; i < BOARD_SIZE; ++i) {
+		for (int j = 0; j < BOARD_SIZE; ++j) {
+			cout << "(";
+			for (int c = 0; c < FEATURE_NUM; ++c) {
+				cout << f.get(POS(i, j), c) << ",";
+			}
+			cout << ")";
+		}
+		cout << endl;
+	}
+	cout << endl;
+
+}
+
+void STPredictor::print(vector<BoardFeatures> features) {
+	cout << endl;
+	for (vector<BoardFeatures>::iterator it = features.begin(); it != features.end(); ++it) {
+		BoardFeatures f = *it;
+		print(f);
+	}
+	cout << endl;
 }

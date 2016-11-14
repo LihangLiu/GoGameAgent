@@ -1,3 +1,5 @@
 STDataset/
 Source-10-31-2016/
 *.sdf
+**/Release/
+**/Debug/

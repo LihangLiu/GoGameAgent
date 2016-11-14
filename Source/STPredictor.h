@@ -3,6 +3,7 @@
 #define STPREDICTOR_H
 
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <fstream>
 #include <string>
@@ -11,42 +12,50 @@
 #include "UCT.h"
 #include "NoBB.h"
 #include "config.h"
+#include "CRFonMatlab.h"
 using namespace std;
 
-#define FEATURE_NUM 20
 
-class BoardFeatures
-{
-public:
-	double features[BOARD_SIZE*BOARD_SIZE][FEATURE_NUM];
-	int feature_num = FEATURE_NUM;
-	BoardFeatures() {
-		for (int i = 0; i < BOARD_SIZE*BOARD_SIZE; ++i)
-		for (int n = 0; n < FEATURE_NUM; ++n) {
-			setFeature(i, n, 0);
-		}
-	}
-	void setFeature(int move, int n, double value) {
-		features[move][n] = value;
-	}
-};
+
 
 class STPredictor
 {
 public:
-	STPredictor() {}
-	~STPredictor() {}
+	// crf;
+	STPredictor() {
+		CRFonMatlab* crf = new CRFonMatlab();
 
-	void train(vector<int*> boards, vector<int*> territories);
+		string txtfile = "../../STDataset/ST-20-22456.txt";
+		vector<int*> boards;
+		vector<double*> territories;
+		vector<BoardFeatures> features;
+		// load boards, territories and features
+		readDataset(txtfile, boards, territories);
+		features = getFeatures(boards);
+
+		// CRF Training
+		crf->train(features, territories);
+		delete crf;
+
+	}
+	~STPredictor() {
+		// delete crf;
+	}
+
+	void train(vector<int*> boards, vector<double*> territories);
 	vector<double*> predict(vector<int*> boards);
 	double* predict(int* boards);
-	void readDataset(vector<string> txtFiles, vector<int*> boards, vector<int*> territories);
-	void readDataset(string txtFile, vector<int*> boards, vector<int*> territories);
+	void readDataset(vector<string> txtFiles, vector<int*>& boards, vector<double*>& territories);
+	void readDataset(string txtFile, vector<int*>& boards, vector<double*>& territories);
 	vector<BoardFeatures> getFeatures(vector<int*> boards);
 	BoardFeatures getFeatures(int* board);
 	BoardFeatures getFeatures(int* board, NoBB* nobb);
 	void complementNoBBonBoard(NoBB* nobb, int* board);
 
+	void print(int* boards);
+	void print(vector<int*> boards);
+	void print(BoardFeatures features);
+	void print(vector<BoardFeatures> features);
 };
 
 

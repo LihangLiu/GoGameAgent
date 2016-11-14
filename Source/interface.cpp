@@ -40,9 +40,14 @@
 #include "NoBB.h"
 #include "gtp.h"
 #include "STDatasetGenerator.h"
+#include "STPredictor.h"
 
 /* generate ST dataset*/
 static void generate_STDataset();
+
+/* train crf model */
+static void train_crf();
+
 /* Forward declarations. */
 static int gtp_protocol_version(char *s);
 static int gtp_name(char *s);
@@ -91,12 +96,19 @@ NoBB *my_nobb;
 
 int main(int argc, char **argv)
 {
+	/* Train CRF model*/
+	if (true) {
+		train_crf();
+		return 0;
+	}
+
 	/* ST DATASET GENERATOR*/
 	if (GENERATE_STDATASET)
 	{
 		generate_STDataset();
 		return 0;
 	}
+
     unsigned int random_seed = 1;
 
     /* Optionally a random seed can be passed as an argument to the program. */
@@ -121,9 +133,9 @@ int main(int argc, char **argv)
     return 0;
 }
 
-// generate ST dataset
+/* generate ST dataset*/
 static void generate_STDataset() {
-	int startSteps[] = {35,40};
+	int startSteps[] = {5,10,15,20,25,30,35,40};
 	for (int startStep : startSteps) {
 		int color = BLACK;
 		int monte_carlo_num = 32;
@@ -132,6 +144,16 @@ static void generate_STDataset() {
 	}
 	getchar();
 }
+
+/* train crf model */
+static void train_crf() {
+	STPredictor stp = STPredictor();
+	getchar();
+	return;
+
+
+}
+
 
 /* We are talking version 2 of the protocol. */
 static int gtp_protocol_version(char *s)
