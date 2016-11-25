@@ -11,7 +11,7 @@
 #pragma comment(lib, "libmx.lib")
 #pragma comment(lib, "libmat.lib")
 
-#define FEATURE_NUM 20
+#define FEATURE_NUM 40
 
 class BoardFeatures
 {
@@ -38,6 +38,7 @@ class CRFonMatlab
 {
 public:
 	Engine* pEng;
+	ofstream log_files;
 	CRFonMatlab() {
 		pEng = engOpen(NULL);
 		if (!pEng)
@@ -52,7 +53,7 @@ public:
 			engClose(pEng);
 	}
 
-	void train(vector<BoardFeatures> features, vector<double*> territories) {
+	void train(vector<int*> boards, vector<BoardFeatures> features, vector<double*> territories) {
 		if (features.size() != territories.size()) {
 			cout << "size doesn't match" << endl;
 			exit(0);
@@ -60,11 +61,22 @@ public:
 		int N = features.size();
 		int X = BOARD_SIZE*BOARD_SIZE;
 		int C = FEATURE_NUM;
+		int* boards_1d = matrix_2_vector(boards, N, X);
 		double* features_1d = matrix_2_vector(features, N, X, C);
 		double* territories_1d = matrix_2_vector(territories, N, X);
+
+		
+		log_files.open("loadData.m", ios::app);
+		log_files << "train_boards_1d = [";
+		print(boards_1d, N*X);
+		log_files << "]; \n\ntrain_features_1d = [";
 		print(features_1d, N*X*C);
+		log_files << "]; \n\ntrain_territories_1d = [";
 		print(territories_1d, N*X);
-		getchar();
+		log_files << "];" << endl;
+		log_files.close();
+
+		return;
 
 
 		// put size into matlab
@@ -93,13 +105,42 @@ public:
 		mxDestroyArray(features_1d_m);
 		mxDestroyArray(territories_1d_m);
 	}
+	void test(vector<int*> boards, vector<BoardFeatures> features, vector<double*> probabilities) {
+		if (features.size() != probabilities.size()) {
+			cout << "size doesn't match" << endl;
+			exit(0);
+		}
+		int N = features.size();
+		int X = BOARD_SIZE*BOARD_SIZE;
+		int C = FEATURE_NUM;
+		int* boards_1d = matrix_2_vector(boards, N, X);
+		double* features_1d = matrix_2_vector(features, N, X, C);
+		double* probabilities_1d = matrix_2_vector(probabilities, N, X);
+		
+		log_files.open("loadData.m", ios::app);
+		log_files << "test_boards_1d = [";
+		print(boards_1d, N*X);
+		log_files << "]; \n\ntest_features_1d = [";
+		print(features_1d, N*X*C);
+		log_files << "]; \n\ntest_probabilities_1d = [";
+		print(probabilities_1d, N*X);
+		log_files << "];" << endl;
+		log_files.close();
+
+	}
 
 private:
 	void print(double *x, int N) {
-		cout << endl;
+		log_files << endl;
 		for (int i = 0; i < N; ++i)
-			cout << x[i] << ",";
-		cout << endl;
+			log_files << x[i] << ",";
+		log_files << endl;
+	}
+	void print(int *x, int N) {
+		log_files << endl;
+		for (int i = 0; i < N; ++i)
+			log_files << x[i] << ",";
+		log_files << endl;
 	}
 
 	int* matrix_2_vector(vector<int*> matrix, int N, int X) {

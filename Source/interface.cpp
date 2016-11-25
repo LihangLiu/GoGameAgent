@@ -97,10 +97,10 @@ NoBB *my_nobb;
 int main(int argc, char **argv)
 {
 	/* Train CRF model*/
-	if (true) {
+	/*if (true) {
 		train_crf();
 		return 0;
-	}
+	}*/
 
 	/* ST DATASET GENERATOR*/
 	if (GENERATE_STDATASET)
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
 /* generate ST dataset*/
 static void generate_STDataset() {
-	int startSteps[] = {5,10,15,20,25,30,35,40};
+	int startSteps[] = {8,16,20,26,30,36,40};
 	for (int startStep : startSteps) {
 		int color = BLACK;
 		int monte_carlo_num = 32;
