@@ -1,8 +1,11 @@
 #include "UCT.h"
+#include "STPredictor.h"
 
 /* Offsets for the four directly adjacent neighbors. Used for looping. */
 static int deltai[4] = {-1, 1, 0, 0};
 static int deltaj[4] = {0, 0, -1, 1};
+
+static STPredictor stp = STPredictor();
 
 void Node::update(double mc, vector<int> *actions)
 {
@@ -15,8 +18,8 @@ void Node::update(double mc, vector<int> *actions)
     this->MC_rate += mc;
 	this->nMC++;
 
+	/* AMAF */
 	if (this->parent != NULL){
-        /* AMAF */
 		static bool visited[MAXNUM_CHILDREN];
 		memset(visited,0,sizeof(visited));
 		for(int t=depth;t<(int)actions->size();t+=2)
@@ -40,39 +43,66 @@ void Node::update(double mc, vector<int> *actions)
 	}
 }
 
-void UCTree::loop(NoBB *newnobb)
+void Node::update(NoBB* nobb) {				// update according to final status. STPredictor
+	if (this->parent != NULL){
+		Node *parent_ = this->parent;
+		Node *cur_child = parent_->eldest_child;
+		while (cur_child != NULL) {
+			cur_child->nST++;
+			int territoryColor = (nobb->isBlackTerritory(cur_child->pos)) ? BLACK : WHITE;
+			if (cur_child->color == territoryColor)
+				cur_child->ST_wins++;
+
+			cur_child = cur_child->sibling;
+		}
+
+		this->parent->update(nobb);
+	}
+
+}
+
+void UCTree::loop()
 {
 	vector<int> actions;
 	Node * cur_node = root;
 
-    newnobb->set_context(root_context);
+	NoBB newnobb = NoBB();
+    newnobb.set_context(root_context);
+
 	actions.push_back(cur_node->pos);
+	// dfs to a leaf 
 	while (cur_node->eldest_child!=NULL) {
 		cur_node = cur_node->get_best_child();
 		//check if pass move happens
 		if (cur_node->pos == PASS_MOVE) break;
 
-		newnobb->play_move(I(cur_node->pos),J(cur_node->pos),cur_node->color);
+		newnobb.play_move(I(cur_node->pos),J(cur_node->pos),cur_node->color);
 		actions.push_back(cur_node->pos);
 	}
-	NoBB_Context leaf_context = newnobb->get_context();   //backup context of leaf node
+	NoBB_Context leaf_context = newnobb.get_context();   //backup context of leaf node
 
 	stat->max_depth = (stat->max_depth < cur_node->depth) ? cur_node->depth : stat->max_depth;
 
+	// mc on the leaf and update values recursively
 	for(int i=0;i<NODE_EXPAND_LIMIT;++i) {
-		newnobb->set_context(leaf_context);
-		double mc = newnobb->monte_carlo(cur_node->color,cur_node->pos,&actions);
+		newnobb.set_context(leaf_context);
+		double mc = newnobb.monte_carlo(cur_node->color,cur_node->pos,&actions);
 		this->stat->mc_count++;
+
 		WaitForSingleObject(mutex, INFINITE);
 		cur_node->update(mc, &actions);
+		ReleaseMutex(mutex);
+		WaitForSingleObject(mutex, INFINITE);
+		cur_node->update(&newnobb);			// update for STPredictor
 		ReleaseMutex(mutex);            
 	}
 
+	// expand the leaf
 	WaitForSingleObject(mutex, INFINITE);
 	if (cur_node->eldest_child == NULL) {
 		/* multi-thread may expand node twice, so be careful to avoid it            */
-		newnobb->set_context(leaf_context);
-		expand_current_node(cur_node,newnobb);
+		newnobb.set_context(leaf_context);
+		expand_current_node(cur_node,&newnobb);
 	}
 	ReleaseMutex(mutex);                    //release mutex
 }
@@ -85,19 +115,24 @@ void UCTree::expand_current_node(Node *cu_node, NoBB * newnobb)
 	if (cu_node->parent != NULL){
 		prepre_pos = cu_node->parent->pos;
 	}
+	// calculate heuristic values for Strategy 2 and 4
 	double rating[MAX_BOARD*MAX_BOARD];
 	if (UCT_STARTEGY==2 || UCT_STARTEGY==4) {
         elorating elo = elorating();
         elo.calelo(newnobb,pre_pos,prepre_pos,color,rating);
 	}
 
+
 	for (int i = 0; i<board_size; ++i)
 		for (int j = 0; j<board_size; ++j) {
 			bool if_move = false;
 			if (newnobb->legal_move(i, j, color) && !newnobb->suicide(i, j, color)) {
 				Node * new_child = new Node(cu_node, color, cu_node->depth + 1, POS(i, j));
+				// for strategy 2 and 4
 				if (UCT_STARTEGY==2 || UCT_STARTEGY==4)
                     new_child->H = rating[POS(i,j)];
+				// for strategy 6
+				new_child->CRF_ST_rate = crf_probs[POS(i, j)];
 				cu_node->addChild(new_child);
 			}
 		}
@@ -125,13 +160,13 @@ DWORD WINAPI UCTree::run_loops(LPVOID Param)
 {
 
 	UCTree *pointer = (UCTree *)Param;
-	NoBB *newnobb = new NoBB();
+	
 
 	time_t ts;
 	ts = clock();
 	int loop_count = 0;
 	while (true) {
-		pointer->loop(newnobb);
+		pointer->loop();
 		//check time limit
 		if (clock()-ts>TIME_LIMIT)
 			break;
@@ -141,7 +176,6 @@ DWORD WINAPI UCTree::run_loops(LPVOID Param)
 	
 	if (TEST_MODE)
 		log_files<<"thread : run "<<loop_count*NODE_EXPAND_LIMIT <<"mcs\n";
-	delete newnobb;
 	return 0;
 }
 
@@ -170,10 +204,8 @@ int UCTree::getOptimalPos(double * final_board)
 	if (root->eldest_child->pos == PASS_MOVE) {
 		return PASS_MOVE;
 	}
-	//quick judge
-	/*int i,j;
-	if (quick_judge(&i,&j,OTHER_COLOR(root->color)))
-		return POS(i,j);*/
+	// calculate CRF ST values for strategy 6. Not wrapped by "if" because of enforcement of equal cal time
+	stp.predict(root_context.board, crf_probs);
 
 	//use multi-thread to run loops
 	mutex = CreateMutex(NULL, false, NULL);
@@ -215,7 +247,8 @@ int UCTree::getOptimalPos(double * final_board)
 	memset(final_board, 0, sizeof(double)*MAX_BOARD*MAX_BOARD);
 	Node *cur_child = root->eldest_child;
 	while (cur_child != NULL) {
-        final_board[cur_child->pos] = (cur_child->nMC);	//
+		if (cur_child->nST!=0)
+			final_board[cur_child->pos] = cur_child->CRF_ST_rate;			// this is for GUI use
         cur_child = cur_child->sibling;
 	}
 	return result_pos;

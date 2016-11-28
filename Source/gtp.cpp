@@ -42,6 +42,7 @@
 #include <assert.h>
 
 #include "gtp.h"
+#include "config.h"
 
 /* These are copied from gnugo.h. We don't include this file in order
  * to remain as independent as possible of GNU Go internals.
@@ -79,7 +80,7 @@ gtp_main_loop(struct gtp_command commands[], FILE *gtp_input,
     int n;
     int status = GTP_OK;
 //#warning just for testing
-    bool test_mode = 0;
+    bool test_mode = SELF_PLAY;
     int stdin_DFA = 0;
 
     while (status == GTP_OK) {
@@ -97,6 +98,7 @@ gtp_main_loop(struct gtp_command commands[], FILE *gtp_input,
 //#warning just for testing
         if (test_mode) {
             char testing_line[GTP_BUFSIZE];
+			int count_pass = 0;
             if (stdin_DFA == 0) {
                 memcpy(testing_line, "genmove b", GTP_BUFSIZE*sizeof(char));
             } else if (stdin_DFA == 1) {

@@ -2,6 +2,51 @@
 #include <io.h>
 #include "STPredictor.h"
 
+void STPredictor::overall_test() {
+	double train_test_ratio = 0.8;
+
+	// txt files
+	string datasetPath = "../../STDataset/";
+	vector<string> txtfiles;
+	GetAllFormatFiles(datasetPath, txtfiles, ".txt");		// ill implemented = = f*ck windows c++
+
+	// load boards, territories and features for train
+	string phase = "train";
+	vector<int*> train_boards;
+	vector<double*> train_territories;
+	vector<BoardFeatures> train_features;
+	for (int i = 0; i < txtfiles.size()*train_test_ratio; ++i) {
+		string txtfile = datasetPath + txtfiles[i];
+		readDataset(txtfile, train_boards, train_territories, phase);
+	}
+	train_features = getFeatures(train_boards);
+
+	cout << train_boards.size() << endl;
+	cout << train_territories.size() << endl;
+	cout << train_features.size() << endl;
+
+	// load boards, territories and features for test
+	phase = "test";
+	vector<int*> test_boards;
+	vector<double*> test_probabilities;
+	vector<BoardFeatures> test_features;
+	for (int i = txtfiles.size()*train_test_ratio; i < txtfiles.size(); ++i) {
+		string txtfile = datasetPath + txtfiles[i];
+		readDataset(txtfile, test_boards, test_probabilities, phase);
+	}
+	test_features = getFeatures(test_boards);
+
+	cout << test_boards.size() << endl;
+	cout << test_probabilities.size() << endl;
+	cout << test_features.size() << endl;
+
+
+	// CRF Training
+	CRFonMatlab* crf = new CRFonMatlab();
+	crf->train(train_boards, train_features, train_territories);
+	crf->test(test_boards, test_features, test_probabilities);
+	delete crf;
+}
 
 void STPredictor::train(vector<int*> boards, vector<double*> territories) {
 	vector<BoardFeatures> features = getFeatures(boards);
@@ -24,6 +69,11 @@ double* STPredictor::predict(int* boards) {
 	// interact with matlab
 
 	return res;
+}
+
+void STPredictor::predict(int* board, double* probability) {
+	BoardFeatures features = getFeatures(board);
+	crf->getProbabilities(board, features, probability);
 }
 
 //获取特定格式的文件名  

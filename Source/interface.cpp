@@ -37,10 +37,12 @@
 #include <stdlib.h>
 #include <cstring>
 
+#include "config.h"
 #include "NoBB.h"
 #include "gtp.h"
 #include "STDatasetGenerator.h"
 #include "STPredictor.h"
+#include "StrategyComparator.h"
 
 /* generate ST dataset*/
 static void generate_STDataset();
@@ -94,6 +96,7 @@ static struct gtp_command commands[] = {
 
 NoBB *my_nobb;
 
+
 int main(int argc, char **argv)
 {
 	/* Train CRF model*/
@@ -101,6 +104,13 @@ int main(int argc, char **argv)
 		train_crf();
 		return 0;
 	}*/
+
+	/* strategy comparator*/
+	if (SELF_PLAY) {
+		StrategyComparator sc = StrategyComparator();
+		getchar();
+		return 0;
+	}
 
 	/* ST DATASET GENERATOR*/
 	if (GENERATE_STDATASET)
@@ -469,7 +479,7 @@ static int gtp_prob(char *s){
 	gtp_printf("\n  ");
 	for (i = 0; i < my_nobb->board_size; ++i){
 		for (j = 0; j < my_nobb->board_size; ++j){
-			gtp_printf("%c%d  %.f\n", 'A' + j + (j >= 8), my_nobb->board_size - i, my_nobb->final_board[my_nobb->board_size*i+j]);
+			gtp_printf("%c%d  %.2f\n", 'A' + j + (j >= 8), my_nobb->board_size - i, my_nobb->final_board[my_nobb->board_size*i+j]);
 			// gtp_printf("%c%d  %d\n", 'A' + j + (j >= 8), my_nobb->board_size - i, 
 			//		my_nobb->rational_move(i, j, WHITE));
 		}

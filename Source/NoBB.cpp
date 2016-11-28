@@ -45,8 +45,13 @@ double NoBB::monte_carlo(int color,int pre_pos,vector<int> *actions)
 	int count = 0;
 	int num_pass = 0;
 	while (true && count <= MC_LIMIT) {
-		move = nakade(cur_color, pre_i, pre_j);
-		if (pass_move(move)) move = atari_defense(cur_color, pre_i, pre_j);
+		if (rand() % 2 == 0) {
+			move = nakade(cur_color, pre_i, pre_j);
+			if (pass_move(move)) move = atari_defense(cur_color, pre_i, pre_j);
+		} else {
+			move = atari_defense(cur_color, pre_i, pre_j); 
+			if (pass_move(move)) move = nakade(cur_color, pre_i, pre_j);
+		}
 		if (pass_move(move)) move = fill_board(6);
 		if (pass_move(move)) move = generate_local_random_move_with_pattern(cur_color,pre_i,pre_j,1);
 		if (pass_move(move)) move = generate_capture_move(cur_color);
@@ -439,6 +444,11 @@ int NoBB::board_empty()
 int NoBB::get_board(int i, int j)
 {
   return board[i * board_size + j];
+}
+
+int NoBB::get_board(int pos)
+{
+	return board[pos];
 }
 
 /* Get the stones of a string. stonei and stonej must point to arrays
@@ -994,6 +1004,18 @@ void NoBB::compute_final_status(void)
 int NoBB::get_final_status(int i, int j)
 {
   return final_status[POS(i, j)];
+}
+
+bool NoBB::isBlackTerritory(int pos) {
+	int status = get_final_status(I(pos), J(pos));
+	if (status == BLACK_TERRITORY)
+		return true;
+	else if (status == WHITE_TERRITORY)
+		return false;
+	else if ((status == ALIVE) ^ (get_board(pos) == WHITE))
+		return true;
+	else
+		return false;
 }
 
 int NoBB::get_final_win(int color){

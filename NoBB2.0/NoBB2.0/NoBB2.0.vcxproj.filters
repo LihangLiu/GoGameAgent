@@ -48,6 +48,9 @@
     <ClInclude Include="..\..\Source\CRFonMatlab.h">
       <Filter>头文件\ST</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\StrategyComparator.h">
+      <Filter>头文件\ST</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Source\elorating.cpp">

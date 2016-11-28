@@ -110,6 +110,7 @@ public:
     void clear_board(void);
     int board_empty(void);
     int get_board(int i, int j);
+	int get_board(int pos);
     int get_string(int i, int j, int *stonei, int *stonej);
     int legal_move(int i, int j, int color);
 	bool rational_move(int i, int j, int color);
@@ -122,6 +123,7 @@ public:
     void play_move(int i, int j, int color);
 	void play_move(int move, int color);
     int generate_move(int color);      //generate a move by uctree
+	bool isBlackTerritory(int pos);
     void compute_final_status(void);
     int get_final_status(int i, int j);
     void set_final_status(int i, int j, int status);
@@ -148,9 +150,9 @@ public:
     int on_board(int i, int j);
 
     double final_board[MAX_BOARD * MAX_BOARD];	// only used for statistics for GUI
+	int final_status[MAX_BOARD * MAX_BOARD];    /* Storage for final status computations. */
 
 private:
-    int final_status[MAX_BOARD * MAX_BOARD];    /* Storage for final status computations. */
     int ko_i, ko_j;                             /* Point which would be an illegal ko recapture. */
     int pre_i, pre_j;
 	vector<int> black_in_atari;

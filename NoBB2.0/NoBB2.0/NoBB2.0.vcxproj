@@ -215,6 +215,7 @@
     <ClInclude Include="..\..\Source\HandCodedPattern.h" />
     <ClInclude Include="..\..\Source\NoBB.h" />
     <ClInclude Include="..\..\Source\STPredictor.h" />
+    <ClInclude Include="..\..\Source\StrategyComparator.h" />
     <ClInclude Include="..\..\Source\UCT.h" />
   </ItemGroup>
   <ItemGroup>
