@@ -5,7 +5,6 @@
 static int deltai[4] = {-1, 1, 0, 0};
 static int deltaj[4] = {0, 0, -1, 1};
 
-static STPredictor stp = STPredictor();
 
 void Node::update(double mc, vector<int> *actions)
 {
@@ -131,8 +130,6 @@ void UCTree::expand_current_node(Node *cu_node, NoBB * newnobb)
 				// for strategy 2 and 4
 				if (UCT_STARTEGY==2 || UCT_STARTEGY==4)
                     new_child->H = rating[POS(i,j)];
-				// for strategy 6
-				new_child->CRF_ST_rate = crf_probs[POS(i, j)];
 				cu_node->addChild(new_child);
 			}
 		}
@@ -204,8 +201,7 @@ int UCTree::getOptimalPos(double * final_board)
 	if (root->eldest_child->pos == PASS_MOVE) {
 		return PASS_MOVE;
 	}
-	// calculate CRF ST values for strategy 6. Not wrapped by "if" because of enforcement of equal cal time
-	stp.predict(root_context.board, crf_probs);
+
 
 	//use multi-thread to run loops
 	mutex = CreateMutex(NULL, false, NULL);

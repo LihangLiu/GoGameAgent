@@ -14,7 +14,7 @@
 #include "config.h"
 using namespace std;
 
-static int uct_strategy = -1;	// -1: use default. Refer to config.h
+extern int uct_strategy;	// -1: use default. Refer to config.h
 
 class StrategyComparator {
 public:

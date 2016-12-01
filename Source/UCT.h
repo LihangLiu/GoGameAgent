@@ -25,6 +25,8 @@ static ofstream log_files;
 
 static int MC_COUNT;
 
+extern int uct_strategy;
+
 class Stat
 {
 public:
@@ -136,28 +138,15 @@ public:
 								+ gamma*((double)(H)/(H+10));
 			break;
 
-		case 5:		//amaf + STPredictor      ???????????????????????????????????????????
+		case 5:		//amaf + STPredictor     
 			belta = (double)(nAMAF) / (nMC + nAMAF + 0.015*nMC*nAMAF);
-			gamma = 50.0/(50.0 + nST*nMC);
+			gamma = (1-belta)*50.0/(50.0 + nST*nMC);
 			if (nMC == 0 || nAMAF == 0 || nST == 0)
 				score = 1000 + rand()*GetCurrentThreadId() % clock();
 			else {
 				score = (1 - belta - gamma)*((double)(wins) / nMC)
 					+ belta*((double)(AMAF_wins) / nAMAF)
 					+ gamma*(0.5 - abs(0.5 - (double)(ST_wins) / nST));
-
-			}
-			break;
-
-		case 6:		//amaf + CRF-STPredictor      ???????????????????????????????????????????
-			belta = (double)(nAMAF) / (nMC + nAMAF + 0.015*nMC*nAMAF);
-			gamma = 50.0 / (50.0 + nAMAF*nMC);
-			if (nMC == 0 || nAMAF == 0 )
-				score = 1000 + rand()*GetCurrentThreadId() % clock();
-			else {
-				score = (1 - belta - gamma)*((double)(wins) / nMC)
-					+ belta*((double)(AMAF_wins) / nAMAF)
-					+ gamma*(0.5 - abs(0.5 - CRF_ST_rate));
 
 			}
 			break;
